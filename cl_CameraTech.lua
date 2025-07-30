@@ -11,7 +11,7 @@ currentANPRModelsJsonString = nil;
 ForceFocusedAnpr = false;
 VehicleANPRModels = {}
 FixedANPRModels = {}
-debug = true
+debug = false
 
 
 
@@ -85,7 +85,7 @@ end)
 
 RegisterNetEvent("CameraTech:FixedANPRToggle")
 AddEventHandler("CameraTech:FixedANPRToggle", function()
-    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    local vehicle = GetVehiclePedIsIn(ped, false)
 
     if FixedANPRAlertsToggle then
         toggleFixedANPR(false)
@@ -220,13 +220,13 @@ if debug then
         while true do
             Citizen.Wait(0)
 
-            if IsControlJustReleased(1, 120) then -- or try 38 for E key
-                if type(PlateInfo) == "table" then
-                    exports['bs-tableviewer']:debugTable(PlateInfo)
-                else
-                    print("PlateInfo is invalid:", PlateInfo)
-                end
-            end
+            --if IsControlJustReleased(1, 120) then -- or try 38 for E key
+                --if type(PlateInfo) == "table" then
+                    --exports['bs-tableviewer']:debugTable(PlateInfo)
+                --else
+                    --print("PlateInfo is invalid:", PlateInfo)
+                --end
+            --end
         end
     end)
 end
@@ -244,8 +244,8 @@ function Main()
         Citizen.Wait(5)
 
         local playerPed = PlayerPedId()
-        if playerPed and IsPedInAnyVehicle(playerPed, false) then
-            local veh = GetVehiclePedIsIn(playerPed, false)
+        local veh = GetVehiclePedIsIn(playerPed, false)
+        if ped and veh then
 
             -- Handle ANPR Interface state
             if not MasterInterfaceToggle and ANPRvehicle and veh == ANPRvehicle then
@@ -307,7 +307,7 @@ function Main()
 
                                 print ("ANPR Alert sent")
 
-                                TriggerServerEvent("CameraTech:FixedANPRAlert", colour.PrimaryColour, model, closest.Name, dir, plate, closest.X, closest.Y, closest.Z)
+                                TriggerServerEvent("CameraTech:FixedANPRAlert", colour.PrimarySimple, model, closest.Name, dir, plate, closest.X, closest.Y, closest.Z)
                                 lastTriggeredANPRCamera = closest
                                 timeLastTriggeredANPRCamera = GetGameTimer()
                                 lastTriggeredDir = dir
@@ -374,196 +374,255 @@ end
 PrimaryColour = -1
 SecondaryColour = -1
 
-SimpleColours = { "Black", "Graphite", "Steel", "Silver", "Red", "Pink", "Orange", "Yellow", "Green", "Blue", "Brown", "Purple", "White", "Gray", "Gold", "Steel", "Aluminium", "Beige" }
+SimpleMap = {
+    [-1] = "Unknown",
 
-function GetVehicleColour(handle) -- presumed broken
-    local primary, secondary = GetVehicleColours(veh)
-    PrimaryColour = EPaint[tostring(primary)] or "Unknown"
-    SecondaryColour = EPaint[tostring(secondary)] or "none"
+    [0] = "Black", [1] = "Black", [2] = "Steel", [3] = "Silver",
+    [4] = "Silver", [5] = "Silver", [6] = "Steel", [7] = "Silver",
+    [8] = "Silver", [9] = "Silver", [10] = "Steel", [11] = "Black",
 
-    return {
-        PrimaryColour = PrimaryColour,
-        SecondaryColour = SecondaryColour,
-        PrimarySimpleColourName = GetSimpleColourName(PrimaryColour),
-        SecondarySimpleColourName = GetSimpleColourName(SecondaryColour)
-    }
-end
+    [12] = "Black", [13] = "Gray", [14] = "Gray", [15] = "Black",
+    [16] = "Black", [17] = "Gray", [18] = "Silver", [19] = "Steel",
+    [20] = "Gray", [21] = "Black", [22] = "Gray", [23] = "Silver",
+    [24] = "Silver", [25] = "Silver", [26] = "Silver",
 
-function GetSimpleColourName(paint)
-    print("Paint value is: ", paint, "Type: ", type(paint))
-    for _, simpleColour in ipairs(SimpleColours) do
-        if paint:lower():find(simpleColour:lower(), 1, true) then
-            return simpleColour
-        end
-    end
-    return paint
-end
+     [27] = "Red", [28] = "Red", [29] = "Red", [30] = "Red",
+    [31] = "Red", [32] = "Red", [33] = "Red", [34] = "Red",
+    [35] = "Red", [36] = "Orange", [37] = "Gold", [38] = "Orange",
+    [39] = "Red", [40] = "Red", [41] = "Orange", [42] = "Yellow",
+    [43] = "Red", [44] = "Red", [45] = "Red", [46] = "Red",
+    [47] = "Red", [48] = "Red",
+
+    [49] = "Green", [50] = "Green", [51] = "Green", [52] = "Green",
+    [53] = "Green", [54] = "Green", [55] = "Green",
+    [56] = "Green", [57] = "Green", [58] = "Green", [59] = "Green",
+    [60] = "Green",
+
+    [61] = "Blue", [62] = "Blue", [63] = "Blue", [64] = "Blue",
+    [65] = "Blue", [66] = "Blue", [67] = "Blue", [68] = "Blue",
+    [69] = "Blue", [70] = "Blue", [71] = "Blue", [72] = "Blue",
+    [73] = "Blue", [74] = "Blue", [75] = "Blue", [76] = "Blue",
+    [77] = "Blue", [78] = "Blue", [79] = "Blue", [80] = "Blue",
+    [81] = "Blue", [82] = "Blue", [83] = "Blue", [84] = "Blue",
+    [85] = "Blue", [86] = "Blue", [87] = "Blue",
+
+    [88] = "Yellow", [89] = "Yellow", [90] = "Brown", [91] = "Yellow",
+    [92] = "Green", [93] = "Beige", [94] = "Beige", [95] = "Beige",
+    [96] = "Brown", [97] = "Brown", [98] = "Brown", [99] = "Beige",
+    [100] = "Brown", [101] = "Brown", [102] = "Brown", [103] = "Brown",
+    [104] = "Brown", [105] = "Beige", [106] = "Beige", [107] = "Beige",
+    [108] = "Brown", [109] = "Beige",
+
+    [110] = "White", [111] = "White", [112] = "Beige", [113] = "Brown",
+    [114] = "Brown", [115] = "Beige", [116] = "Steel", [117] = "Steel",
+    [118] = "Aluminium", [119] = "Aluminium", [120] = "White",
+    [121] = "White", [122] = "Orange", [123] = "Orange",
+    [124] = "Green", [125] = "Yellow", [126] = "Blue", [127] = "Green",
+    [128] = "Brown", [129] = "Orange", [130] = "White",
+    [131] = "White", [132] = "Green", [133] = "White",
+
+    [134] = "Pink", [135] = "Pink", [136] = "Pink",
+    [137] = "Orange", [138] = "Green", [139] = "Blue",
+    [140] = "Blue", [141] = "Purple", [142] = "Red",
+    [143] = "Green", [144] = "Purple", [145] = "Blue",
+    [146] = "Black", [147] = "Purple", [148] = "Purple",
+    [149] = "Red", [150] = "Green", [151] = "Green",
+    [152] = "Brown", [153] = "Brown", [154] = "Green",
+    [155] = "Steel", [156] = "Blue", [157] = "Gold", [158] = "Gold",
+    [159] = "Gray"
+}
+
+
 EPaint = {
-    Unknown = -1,
-    Black = 0,
-    Carbon_Black = 147,
-    Graphite = 1,
-    Anhracite_Black = 11,
-    Black_Steel = 2,
-    Dark_Steel = 3,
-    Silver = 4,
-    Bluish_Silver = 5,
-    Rolled_Steel = 6,
-    Shadow_Silver = 7,
-    Stone_Silver = 8,
-    Midnight_Silver = 9,
-    Cast_Iron_Silver = 10,
-    Red = 27,
-    Torino_Red = 28,
-    Formula_Red = 29,
-    Lava_Red = 150,
-    Blaze_Red = 30,
-    Grace_Red = 31,
-    Garnet_Red = 32,
-    Sunset_Red = 33,
-    Cabernet_Red = 34,
-    Wine_Red = 143,
-    Candy_Red = 35,
-    Hot_Pink = 135,
-    Pfister_Pink = 137,
-    Salmon_Pink = 136,
-    Sunrise_Orange = 36,
-    Orange = 38,
-    Bright_Orange = 138,
-    Gold = 37,
-    Bronze = 90,
-    Yellow = 88,
-    Race_Yellow = 89,
-    Dew_Yellow = 91,
-    Green = 139,
-    Dark_Green = 49,
-    Racing_Green = 50,
-    Sea_Green = 51,
-    Olive_Green = 52,
-    Bright_Green = 53,
-    Gasoline_Green = 54,
-    Lime_Green = 92,
-    Hunter_Green = 144,
-    Securiror_Green = 125,
-    Midnight_Blue = 141,
-    Galaxy_Blue = 61,
-    Dark_Blue = 62,
-    Saxon_Blue = 63,
-    Blue = 64,
-    Bright_Blue = 140,
-    Mariner_Blue = 65,
-    Harbor_Blue = 66,
-    Diamond_Blue = 67,
-    Surf_Blue = 68,
-    Nautical_Blue = 69,
-    Racing_Blue = 73,
-    Ultra_Blue = 70,
-    Light_Blue = 74,
-    Police_Car_Blue = 127,
-    Epsilon_Blue = 157,
-    Chocolate_Brown = 96,
-    Bison_Brown = 101,
-    Creek_Brown = 95,
-    Feltzer_Brown = 94,
-    Maple_Brown = 97,
-    Beechwood_Brown = 103,
-    Sienna_Brown = 104,
-    Saddle_Brown = 98,
-    Moss_Brown = 100,
-    Woodbeech_Brown = 102,
-    Straw_Brown = 99,
-    Sandy_Brown = 105,
-    Bleached_Brown = 106,
-    Schafter_Purple = 71,
-    Spinnaker_Purple = 72,
-    Midnight_Purple = 142,
-    Metallic_Midnight_Purple = 146,
-    Bright_Purple = 145,
-    Cream = 107,
-    Ice_White = 111,
-    Frost_White = 112,
-    Pure_White = 134,
-    Default_Alloy = 156,
-    Champagne = 93,
-    Matte_Black = 12,
-    Matte_Gray = 13,
-    Matte_Light_Gray = 14,
-    Matte_Ice_White = 131,
-    Matte_Blue = 83,
-    Matte_Dark_Blue = 82,
-    Matte_Midnight_Blue = 84,
-    Matte_Midnight_Purple = 149,
-    Matte_Schafter_Purple = 148,
-    Matte_Red = 39,
-    Matte_Dark_Red = 40,
-    Matte_Orange = 41,
-    Matte_Yellow = 42,
-    Matte_Lime_Green = 55,
-    Matte_Green = 128,
-    Matte_Forest_Green = 151,
-    Matte_Foliage_Green = 155,
-    Matte_Brown = 129,
-    Matte_Olive_Darb = 152,
-    Matte_Dark_Earth = 153,
-    Matte_Desert_Tan = 154,
-    Util_Black = 15,
-    Util_Black_Poly = 16,
-    Util_Dark_Silver = 17,
-    Util_Silver = 18,
-    Util_Gun_Metal = 19,
-    Util_Shadow_Silver = 20,
-    Util_Red = 43,
-    Util_Bright_Red = 44,
-    Util_Garnet_Red = 45,
-    Util_Dark_Green = 56,
-    Util_Green = 57,
-    Util_Dark_Blue = 75,
-    Util_Midnight_Blue = 76,
-    Util_Blue = 77,
-    Util_Sea_Foam_Blue = 78,
-    Util_Lightning_Blue = 79,
-    Util_Maui_Blue_Poly = 80,
-    Util_Bright_Blue = 81,
-    Util_Brown = 108,
-    Util_Medium_Brown = 109,
-    Util_Light_Brown = 110,
-    Util_Off_White = 122,
-    Worn_Black = 21,
-    Worn_Graphite = 22,
-    Worn_Silver_Gray = 23,
-    Worn_Silver = 24,
-    Worn_Blue_Silver = 25,
-    Worn_Shadow_Silver = 26,
-    Worn_Red = 46,
-    Worn_Golden_Red = 47,
-    Worn_Dark_Red = 48,
-    Worn_Dark_Green = 58,
-    Worn_Green = 59,
-    Worn_Sea_Wash = 60,
-    Worn_Dark_Blue = 85,
-    Worn_Blue = 86,
-    Worn_Light_Blue = 87,
-    Worn_Honey_Beige = 113,
-    Worn_Brown = 114,
-    Worn_Dark_Brown = 115,
-    Worn_Straw_Beige = 116,
-    Worn_Off_White = 121,
-    Worn_Yellow = 123,
-    Worn_Light_Orange = 124,
-    Worn_Taxi_Yellow = 126,
-    Worn_Orange = 130,
-    Worn_White = 132,
-    Worn_Olive_Army_Green = 133,
+  [-1] = "Unknown",
+  [0] = "Metallic Black",
+  [1] = "Metallic Graphite Black",
+  [2] = "Metallic Black Steel",
+  [3] = "Metallic Dark Silver",
+  [4] = "Metallic Silver",
+  [5] = "Metallic Bluish Silver",
+  [6] = "Metallic Rolled Steel",
+  [7] = "Metallic Shadow Silver",
+  [8] = "Metallic Stone Silver",
+  [9] = "Metallic Midnight Silver",
+  [10] = "Metallic Cast Iron Silver",
+  [11] = "Metallic Anhracite Black",
 
-    Brushed_Steel = 117,
-    Brushed_Black_Steel = 118,
-    Brushed_Aluminum = 119,
-    Pure_Gold = 158,
-    Brushed_Gold = 159,
-    Secret_Gold = 160,
+  [12] = "Matte Black",
+  [13] = "Matte Gray",
+  [14] = "Matte Light Grey",
+  [15] = "Util Black",
+  [16] = "Util Black Poly",
+  [17] = "Util Dark Silver",
+  [18] = "Util Silver",
+  [19] = "Util Gun Metal",
+  [20] = "Util Shadow Silver",
 
-    Chrome = 120,
+  [21] = "Worn Black",
+  [22] = "Worn Graphite",
+  [23] = "Worn Silver Grey",
+  [24] = "Worn Silver",
+  [25] = "Worn Blue Silver",
+  [26] = "Worn Shadow Silver",
+
+  [27] = "Metallic Red",
+  [28] = "Metallic Torino Red",
+  [29] = "Metallic Formula Red",
+  [30] = "Metallic Blaze Red",
+  [31] = "Metallic Grace Red",
+  [32] = "Metallic Garnet Red",
+  [33] = "Metallic Desert Red",
+  [34] = "Metallic Cabernet Red",
+  [35] = "Metallic Candy Red",
+  [36] = "Metallic Sunrise Orange",
+  [37] = "Metallic Classic Gold",
+  [38] = "Metallic Orange",
+
+  [39] = "Matte Red",
+  [40] = "Matte Dark Red",
+  [41] = "Matte Orange",
+  [42] = "Matte Yellow",
+
+  [43] = "Util Red",
+  [44] = "Util Bright Red",
+  [45] = "Util Garnet Red",
+
+  [46] = "Worn Red",
+  [47] = "Worn Golden Red",
+  [48] = "Worn Dark Red",
+
+  [49] = "Metallic Dark Green",
+  [50] = "Metallic Racing Green",
+  [51] = "Metallic Sea Green",
+  [52] = "Metallic Olive Green",
+  [53] = "Metallic Green",
+  [54] = "Metallic Gasoline Blue Green",
+  [55] = "Matte Lime Green",
+  [56] = "Util Dark Green",
+  [57] = "Util Green",
+  [58] = "Worn Dark Green",
+  [59] = "Worn Green",
+  [60] = "Worn Sea Wash",
+
+  [61] = "Metallic Midnight Blue",
+  [62] = "Metallic Dark Blue",
+  [63] = "Metallic Saxony Blue",
+  [64] = "Metallic Blue",
+  [65] = "Metallic Mariner Blue",
+  [66] = "Metallic Harbor Blue",
+  [67] = "Metallic Diamond Blue",
+  [68] = "Metallic Surf Blue",
+  [69] = "Metallic Nautical Blue",
+  [70] = "Metallic Bright Blue",
+  [71] = "Metallic Purple Blue",
+  [72] = "Metallic Spinnaker Blue",
+  [73] = "Metallic Ultra Blue",
+
+  [74] = "Metallic Bright Blue",  -- duplicated names occasionally
+  [75] = "Util Dark Blue",
+  [76] = "Util Midnight Blue",
+  [77] = "Util Blue",
+  [78] = "Util Sea Foam Blue",
+  [79] = "Util Lightning Blue",
+  [80] = "Util Maui Blue Poly",
+  [81] = "Util Bright Blue",
+  [82] = "Matte Dark Blue",
+  [83] = "Matte Blue",
+  [84] = "Matte Midnight Blue",
+  [85] = "Worn Dark Blue",
+  [86] = "Worn Blue",
+  [87] = "Worn Light Blue",
+
+  [88] = "Metallic Taxi Yellow",
+  [89] = "Metallic Race Yellow",
+  [90] = "Metallic Bronze",
+  [91] = "Metallic Yellow Bird",
+  [92] = "Metallic Lime",
+  [93] = "Metallic Champagne",
+  [94] = "Metallic Pueblo Beige",
+  [95] = "Metallic Dark Ivory",
+  [96] = "Metallic Choco Brown",
+  [97] = "Metallic Golden Brown",
+  [98] = "Metallic Light Brown",
+  [99] = "Metallic Straw Beige",
+  [100] = "Metallic Moss Brown",
+  
+  [101] = "Metallic Biston Brown",
+  [102] = "Metallic Beechwood Brown",
+  [103] = "Metallic Dark Beechwood",
+  [104] = "Metallic Choco Orange",
+  [105] = "Metallic Beach Sand",
+  [106] = "Metallic Sun Bleeched Sand",
+  [107] = "Metallic Cream",
+  [108] = "Util Brown",
+  [109] = "Util Light Brown",
+  [110] = "Metallic White",
+  
+  [111] = "Metallic Frost White",
+  [112] = "Worn Honey Beige",
+  [113] = "Worn Brown",
+  [114] = "Worn Dark Brown",
+  [115] = "Worn Straw Beige",
+  [116] = "Brushed Steel",
+  [117] = "Brushed Black Steel",
+  [118] = "Brushed Aluminium",
+  [119] = "Chrome",
+  [120] = "Worn Off White",
+  [121] = "Util Off White",
+  [122] = "Worn Orange",
+  [123] = "Worn Light Orange",
+  [124] = "Metallic Securicor Green",
+  [125] = "Worn Taxi Yellow",
+  [126] = "Police Car Blue",
+  [127] = "Matte Green",
+  [128] = "Matte Brown",
+  [129] = "Worn Orange",
+  [130] = "Matte White",
+  [131] = "Worn White",
+  [132] = "Worn Olive Army Green",
+  [133] = "Pure White",
+  [134] = "Hot Pink",
+  [135] = "Salmon Pink",
+  [136] = "Metallic Vermillion Pink",
+  [137] = "Orange",
+  [138] = "Green",
+  [139] = "Blue",
+  [140] = "Metallic Black Blue",
+  [141] = "Metallic Black Purple",
+  [142] = "Metallic Black Red",
+  [143] = "Hunter Green",
+  [144] = "Metallic Purple",
+  [145] = "Metallic Very Dark Blue",
+  [146] = "Modshop Black",
+  [147] = "Matte Purple",
+  [148] = "Matte Dark Purple",
+  [149] = "Metallic Lava Red",
+  [150] = "Matte Forest Green",
+  [151] = "Matte Olive Drab",
+  [152] = "Matte Desert Brown",
+  [153] = "Matte Desert Tan",
+  [154] = "Matte Foliage Green",
+  [155] = "Default Alloy",
+  [156] = "Epsilon Blue",
+  [157] = "Pure Gold",
+  [158] = "Brushed Gold",
+  [159] = "??? Unlisted/Future"
+}
+
+
+
+
+
+function GetVehicleColour(handle)
+    local primary, secondary = GetVehicleColours(handle)
+    return {
+        PrimaryColour      = EPaint[primary] or "Unknown",
+        SecondaryColour    = EPaint[secondary] or "Unknown",
+        PrimarySimple      = SimpleMap[primary] or "Unknown",
+        SecondarySimple    = SimpleMap[secondary] or "Unknown",
     }
+end
+
 ------------------------ cs
 
 Active = false;
@@ -724,13 +783,11 @@ function CheckANPRShapeTest(cameraname, stest, originVeh, left)
         local plate = GetVehicleNumberPlateText(hitVeh):gsub(" ", "")
 
         if not checkedPlates[plate] then
-            --print (plate)
-            --exports['bs-tableviewer']:debugTable(PlateInfo)
 
             if PlateInfo and PlateInfo[plate] then
                 local from = stest.from or GetEntityCoords(originVeh)
                 local distance = #(from - hitVehPos)
-                local colour = GetVehicleColour(hitVeh).PrimarySimpleColourName
+                local colour = GetVehicleColour(hitVeh).PrimarySimple
 
                 TriggerEvent("chat:addMessage", {
                     color = {0, 0, 0},
