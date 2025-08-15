@@ -11,7 +11,11 @@ currentANPRModelsJsonString = nil;
 ForceFocusedAnpr = false;
 VehicleANPRModels = {}
 FixedANPRModels = {}
+local ANPRCooldowns = {} -- [plate] = timestamp
+local ANPR_COOLDOWN_TIME = 5000 -- 5 seconds
+
 debug = false
+
 
 
 
@@ -117,8 +121,9 @@ AddEventHandler("CameraTech:SyncPlateInfo", function(plateinfo)
         end
     end
 end)
+RegisterNetEvent("CameraTech:FocusANPR")
 
-AddEventHandler("FocusANPR", function(plate)
+AddEventHandler("CameraTech:FocusANPR", function(plate)
     if not IsPlayerInValidVehicle() then return end
     if plate == nil then
         if FocusedPlate == bil then FocusedPlate = lastFixedPlate
@@ -146,12 +151,10 @@ function populateANPRModels(jsonString)
         local modelName = m.ModelName or ""; local accessType = string.lower(m.ANPRAccessType or ""); local modelHash = GetHashKey(modelName)
 
         if accessType == "fixed only" or accessType == "full" then
-            print("Adding to FixedANPRModels: " .. modelName)
             FixedANPRModels[modelHash] = true
         end
 
         if accessType == "vehicle only" or accessType == "full" then
-            print("Adding to VehicleANPRModels: " .. modelName)
             VehicleANPRModels[modelHash] = true
         end
     end
@@ -243,8 +246,7 @@ function Main()
     while true do
         Citizen.Wait(5)
 
-        local playerPed = PlayerPedId()
-        local veh = GetVehiclePedIsIn(playerPed, false)
+        local veh = GetVehiclePedIsIn(ped, false)
         if ped and veh then
 
             -- Handle ANPR Interface state
@@ -270,7 +272,7 @@ function Main()
             end
 
             -- Fixed ANPR Detection
-            if GetPedInVehicleSeat(veh, -1) == playerPed and GetEntitySpeed(veh) > 1 then
+            if GetPedInVehicleSeat(veh, -1) == ped and GetEntitySpeed(veh) > 1 then
                 local plate = string.gsub(GetVehicleNumberPlateText(veh), "%s+", "")
                 
                 if PlateInfo[plate] then
@@ -304,8 +306,6 @@ function Main()
 
                                 local model = GetDisplayNameFromVehicleModel(GetEntityModel(veh))
                                 local colour = GetVehicleColour(veh)
-
-                                print ("ANPR Alert sent")
 
                                 TriggerServerEvent("CameraTech:FixedANPRAlert", colour.PrimarySimple, model, closest.Name, dir, plate, closest.X, closest.Y, closest.Z)
                                 lastTriggeredANPRCamera = closest
@@ -643,14 +643,13 @@ end)
 
 RegisterNetEvent("CameraTech:ToggleVehicleANPR")
 AddEventHandler("CameraTech:ToggleVehicleANPR", function(dynamic)
-    local playerPed = PlayerPedId()
 
     if (active) then
         ToggleVehicleANPR(false)
         ShowNotification("Vehicle ANPR deactivated.")
         active = false
     else
-        local vehicle = GetVehiclePedIsIn(playerPed, false)
+        local vehicle = GetVehiclePedIsIn(ped, false)
         local model = GetEntityModel(vehicle)
         if VehicleANPRModels[model] then
             active = true
@@ -698,9 +697,9 @@ function RunChecks()
     Citizen.CreateThread(function()
         while true do
             Citizen.Wait(10)
+            ped = PlayerPedId()
 
-            local playerPed = PlayerPedId()
-            local vehicle = GetVehiclePedIsIn(playerPed, false)
+            local vehicle = GetVehiclePedIsIn(ped, false)
 
             if IsPlayerInValidVehicle() then
                 if debug then
@@ -774,6 +773,7 @@ function CheckANPRShapeTest(cameraname, stest, originVeh, left)
         local distRight = #(originRight - hitVehPos)
         local positionedRight = distLeft > distRight
 
+        -- Ignore vehicle on the wrong side
         if (left and positionedRight) or (not left and not positionedRight) then
             return
         end
@@ -782,35 +782,40 @@ function CheckANPRShapeTest(cameraname, stest, originVeh, left)
         local modelName = GetDisplayNameFromVehicleModel(modelHash)
         local plate = GetVehicleNumberPlateText(hitVeh):gsub(" ", "")
 
-        if not checkedPlates[plate] then
+        
+        local now = GetGameTimer()
+        if ANPRCooldowns[plate] and now - ANPRCooldowns[plate] < ANPR_COOLDOWN_TIME then
+            return 
+        end
+        ANPRCooldowns[plate] = now
 
-            if PlateInfo and PlateInfo[plate] then
-                local from = stest.from or GetEntityCoords(originVeh)
-                local distance = #(from - hitVehPos)
-                local colour = GetVehicleColour(hitVeh).PrimarySimple
+        if PlateInfo and PlateInfo[plate] then
+            local from = stest.from or GetEntityCoords(originVeh)
+            local distance = #(from - hitVehPos)
+            local colour = GetVehicleColour(hitVeh).PrimarySimple
 
-                TriggerEvent("chat:addMessage", {
-                    color = {0, 0, 0},
-                    args = {
-                        cameraname,
-                        colour .. " " .. modelName .. ". " .. plate .. ". Dist: " .. math.floor(distance) .. ". ^*Markers: ^r" .. PlateInfo[plate]
-                    }
-                })
+            TriggerEvent("chat:addMessage", {
+                color = {0, 0, 0},
+                args = {
+                    cameraname,
+                    colour .. " " .. modelName .. ". " .. plate .. ". Dist: " .. math.floor(distance) .. ". ^*Markers: ^r" .. PlateInfo[plate]
+                }
+            })
 
-                local originPos = GetEntityCoords(originVeh)
-                TriggerServerEvent("CameraTech:VehicleANPRAlert", colour, modelName, cameraname, math.floor(distance), plate, originPos.x, originPos.y, originPos.z)
+            local originPos = GetEntityCoords(originVeh)
+            TriggerServerEvent("CameraTech:VehicleANPRAlert", colour, modelName, cameraname, math.floor(distance), plate, originPos.x, originPos.y, originPos.z)
 
-                PlayANPRAlertSound(true)
-                ANPRInterface.VehicleANPRHeaderString = cameraname
-                ANPRInterface.VehicleANPRInfo = colour .. " " .. modelName .. ". " .. plate .. "."
-                ANPRInterface.VehicleANPRMarkers = "~r~" .. PlateInfo[plate]
-                ANPRInterface.FlashVehicleANPR()
-            else
-                PlayANPRScanSound()
-            end
+            PlayANPRAlertSound(true)
+            ANPRInterface.VehicleANPRHeaderString = cameraname
+            ANPRInterface.VehicleANPRInfo = colour .. " " .. modelName .. ". " .. plate .. "."
+            ANPRInterface.VehicleANPRMarkers = "~r~" .. PlateInfo[plate]
+            ANPRInterface.FlashVehicleANPR()
+        else
+            PlayANPRScanSound()
         end
     end
 end
+
 
 
 
@@ -884,7 +889,6 @@ function ANPRInterface.toggleMasterInterface(toggle)
     if toggle then
         MasterInterfaceToggle = true
         ANPRvehicle = GetVehiclePedIsIn(PlayerPedId(), false)
-        print (ANPRvehicle)
     else
         MasterInterfaceToggle = false
         ANPRvehicle = nil
