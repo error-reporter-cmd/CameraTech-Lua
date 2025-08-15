@@ -190,7 +190,6 @@ function stringsplit(inputstr, sep)
     return t
 end
 
--- Remove key k (and its value) from table t. Return a new (modified) table.
 function removeKey(t, k)
 	local i = 0
 	local keys, values = {},{}
